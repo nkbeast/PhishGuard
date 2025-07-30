@@ -21,14 +21,14 @@
 
 ## 🧠 What is PhishGuard?
 
-**PhishGuard** is a terminal-based, zero-dependency phishing reconnaissance tool that hunts for misconfigured domains missing strict **SPF** and **DMARC** policies. It performs bulk checks for:
+**PhishGuard** is a terminal-based, zero-dependency reconnaissance tool that hunts for misconfigured domains with weak or missing **SPF** and **DMARC** records. It helps identify domains vulnerable to spoofing or phishing.
 
-- ✅ DNS records
-- 📤 MX (Mail Exchange) record trust validation
-- ☀️ SPF record strength (`-all`, `~all`, or missing)
-- 🔐 DMARC policy enforcement (`p=none`, missing, etc.)
+It performs bulk DNS analysis with intelligent logic for:
 
-With its minimalist but powerful Bash engine, it's perfect for bug bounty recon, domain asset evaluation, or phishing surface mapping.
+- ✅ DNS resolution check
+- 📤 MX record validation against trusted providers
+- ☀️ SPF strength evaluation (`~all`, `-all`, or missing)
+- 🔐 DMARC policy enforcement (`p=none`, or missing)
 
 ---
 
@@ -36,29 +36,26 @@ With its minimalist but powerful Bash engine, it's perfect for bug bounty recon,
 
 | Feature            | Description |
 |--------------------|-------------|
-| ⚡ Ultra-Light      | Pure Bash, no Python or dependencies required |
-| 📂 Bulk Mode        | Scan thousands of domains from a list |
-| 🛡️ MX Trust Filter | Detect and skip non-legitimate MX services (e.g., Akamai/CDN) |
-| ✅ DNS/MX Check     | Verify DNS & MX presence before SPF/DMARC scan |
-| 🌐 SPF Scanner     | Detect weak (`~all`) or missing SPF configs |
-| 🔥 DMARC Sniper    | Detect "p=none" or missing DMARC records |
-| 📊 Classification  | Outputs P3 and P4 severity based on real misconfiguration logic |
-| 📄 HTML Report     | Auto-generate clean HTML report with `--html` |
-| 📢 Verbose Logs    | Optional `-v` flag shows full output |
-| 🧼 Clean Output     | Non-verbose mode shows **only vulnerable** |
-| 🌍 Webhook Support | Push results to Discord using `--webhook <url>` |
-| 📝 Save to File    | Save results to plain `.txt` using `--output <file>` |
+| ⚡ Ultra-Light      | Pure Bash script — no Python or external dependencies |
+| 📂 Bulk Mode        | Scan thousands of domains from a file |
+| 🛡️ MX Trust Filter | Filters out domains using CDN/analytics MX (e.g., Akamai) |
+| 🌐 SPF Analyzer     | Detects weak (`~all`) or missing SPF records |
+| 🔥 DMARC Scanner    | Detects missing or weak (`p=none`) DMARC records |
+| 📊 Severity Tags   | Classifies domains as P3 or P4 based on combined misconfigs |
+| 📢 Verbose Mode     | Use `--vuln` to show only vulnerable domains |
+| 🌍 Discord Webhook | Send results to a Discord channel via `-w <url>` |
+| 📝 Save Results     | Save terminal output to a file with `-o <file>` |
 
 ---
 
-## 🎯 Vulnerability Classes
+## 🧨 Vulnerability Classes
 
-| Severity | Condition |
-|----------|-----------|
-| **P3**   | SPF is weak/missing **AND** DMARC is weak/missing |
+| Severity | Description |
+|----------|-------------|
+| **P3**   | SPF is weak or missing **AND** DMARC is weak or missing |
 | **P4**   | SPF is present but DMARC is **weak** (`p=none`) |
 
-PhishGuard intelligently skips domains using CDN/analytics MX (e.g., Akamai, Adobe) by validating against a trusted mail service list.
+PhishGuard intelligently skips domains with non-legit mail services using a trusted MX provider list (e.g., Gmail, Outlook, Zoho, ProtonMail).
 
 ---
 
@@ -75,21 +72,17 @@ chmod +x phishguard.sh
 # Scan a single domain
 ./phishguard.sh -d example.com
 
-# Scan domains from file
+# Scan domains from a list
 ./phishguard.sh -l domains.txt
 
-# Verbose output for full detail
-./phishguard.sh -l domains.txt -v
+# Show only vulnerable (P3/P4) domains
+./phishguard.sh -l domains.txt --vuln
 
-# Generate HTML report
-./phishguard.sh -l domains.txt --html
+# Save results to a text file
+./phishguard.sh -l domains.txt -o results.txt
 
-# Include SPF misconfig check
-./phishguard.sh -l domains.txt -spf
+# Send results to Discord webhook
+./phishguard.sh -l domains.txt -w https://discord.com/api/webhooks/...
 
-# Save to file
-./phishguard.sh -l domains.txt --output results.txt
-
-# Push to Discord
 ./phishguard.sh -l domains.txt --webhook https://discord.com/api/webhooks/...
 ```
