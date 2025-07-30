@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Colors
 RED="\033[1;31m"
 GREEN="\033[1;32m"
@@ -13,15 +11,15 @@ cat << "EOF"
 
      +--^----------,--------,-----,--------^-,       
      | |||||||||   '--------'     |          O       
-     `+---------------------------^----------|       
-       `\_,---------,---------,--------------'       
+     +---------------------------^----------|       
+       \_,---------,---------,--------------'       
          / XXXXXX /'|       /'                        
-        / XXXXXX /  `\    /'                         
-       / XXXXXX /`-------'                          
+        / XXXXXX /  \    /'                         
+       / XXXXXX /-------'                          
       / XXXXXX /                                     
      / XXXXXX /                                      
     (________(                By NK             
-     `------'                                        
+     ------'                                        
 
 ┌────────────────────────────────────────────────────┐
 │  🎯 PHISHGUARD - DMARC & SPF MISCONFIGURATION TOOL │
@@ -33,12 +31,12 @@ EOF
 # Help menu
 print_help() {
     echo -e "${WHITE}Usage:${RESET}"
-    echo -e "  $0 domain.com                       → Scan single domain"
-    echo -e "  $0 -l list.txt                     → Scan list of domains"
-    echo -e "     [--output result.txt]          → Save results to file"
-    echo -e "     [--webhook <url>]              → Send result to Discord"
-    echo -e "     [--vuln]                        → Show only P3/P4 vulnerabilities"
-    echo -e "     [--help]                        → Show this help message"
+    echo -e "  -d domain.com                   → Scan single domain"
+    echo -e "  -l list.txt                     → Scan list of domains"
+    echo -e "  [-o result.txt]                 → Save results to file"
+    echo -e "  [-w <url>]                      → Send result to Discord"
+    echo -e "  [--vuln]                        → Show only P3/P4 vulnerabilities"
+    echo -e "  [-h]                            → Show this help message"
 }
 
 # Strip https://, http:// and trailing /
@@ -61,8 +59,7 @@ trusted_mx=(
   "ionos.com" "1and1.com" "fastmail.com" "gcorelabs.net"
 )
 
-
-# Improved MX filter using trusted base domains
+# Check if MX points to a legitimate provider
 check_mx_provider() {
     local domain=$1
     local valid_mx=false
@@ -82,8 +79,6 @@ check_mx_provider() {
 
     $valid_mx && return 0 || return 1
 }
-
-
 
 # Get SPF record type
 get_spf_type() {
@@ -121,7 +116,6 @@ classify_domain() {
         [[ "$VULN_ONLY" == true ]] && return 1 || { echo -e "$output"; return 1; }
     fi
 
-    # 🔐 MX filter
     if ! check_mx_provider "$domain"; then
         [[ "$VULN_ONLY" == true ]] && return 1 || {
             echo -e "${BLUE}[SKIPPED] $domain → MX not from trusted mail providers${RESET}"
@@ -152,33 +146,37 @@ classify_domain() {
     [[ -n "$OUTPUT_FILE" ]] && echo -e "$output" >> "$OUTPUT_FILE"
 }
 
-
 # Args
 LIST_FILE=""
 WEBHOOK=""
 OUTPUT_FILE=""
 VULN_ONLY=false
+TARGET_DOMAIN=""
 
 # Parse CLI args
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --list|-l)
+        -l)
             LIST_FILE="$2"
             shift 2
             ;;
-        --webhook|-w)
+        -w)
             WEBHOOK="$2"
             shift 2
             ;;
-        --output|-o)
+        -o)
             OUTPUT_FILE="$2"
             shift 2
             ;;
-        --vuln|-vuln)
+        --vuln)
             VULN_ONLY=true
             shift
             ;;
-        --help|-h)
+        -d)
+            TARGET_DOMAIN="$2"
+            shift 2
+            ;;
+        -h)
             print_help
             exit 0
             ;;
@@ -191,7 +189,6 @@ done
 
 banner
 
-# List scanning
 if [[ -n "$LIST_FILE" ]]; then
     while read -r raw_domain; do
         [[ -z "$raw_domain" ]] && continue
@@ -199,12 +196,10 @@ if [[ -n "$LIST_FILE" ]]; then
         classify_domain "$domain"
     done < "$LIST_FILE"
 
-# Single domain
 elif [[ -n "$TARGET_DOMAIN" ]]; then
     cleaned_domain=$(sanitize_domain "$TARGET_DOMAIN")
     classify_domain "$cleaned_domain"
 
-# Show help if nothing passed
 else
     print_help
 fi
